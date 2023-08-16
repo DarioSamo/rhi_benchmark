@@ -19,8 +19,9 @@ int main(int argc, char** argv) {
 	
 	const int IterationCount = 10;
 	for (int iter = 0; iter < IterationCount; iter++) {
+		const int CommandCount = 1000000;
+		
 		timer.reset();
-		const int CommandCount = 100000;
 		commandQueue.clear();
 		for (int i = 0; i < CommandCount; i++) {
 			commandQueue.drawIndexedInstanced(3, 1, 0, 0, 0);

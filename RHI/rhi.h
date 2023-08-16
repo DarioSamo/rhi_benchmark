@@ -27,8 +27,9 @@ struct RHI {
 
 		template<typename T>
 		void queue(const T &command) {
-			const uint8_t *commandPtr = reinterpret_cast<const uint8_t *>(&command);
-			commandBytes.insert(commandBytes.end(), commandPtr, commandPtr + sizeof(T));
+			size_t currentSize = commandBytes.size();
+			commandBytes.resize(currentSize + sizeof(T));
+			memcpy(commandBytes.data() + currentSize, reinterpret_cast<const uint8_t *>(&command), sizeof(T));
 		}
 
 		CommandType peek(size_t &cursor) const {
