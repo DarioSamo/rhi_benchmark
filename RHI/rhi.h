@@ -26,12 +26,12 @@ struct RHI {
 		std::vector<uint8_t> commandBytes;
 
 		template<typename T>
-		inline void queue(const T &command) {
+		void queue(const T &command) {
 			const uint8_t *commandPtr = reinterpret_cast<const uint8_t *>(&command);
 			commandBytes.insert(commandBytes.end(), commandPtr, commandPtr + sizeof(T));
 		}
 
-		inline CommandType peek(size_t &cursor) const {
+		CommandType peek(size_t &cursor) const {
 			if (cursor >= commandBytes.size()) {
 				return CommandType::End;
 			}
@@ -41,7 +41,7 @@ struct RHI {
 		}
 
 		template<typename T>
-		inline const T &read(size_t &cursor) const {
+		const T &read(size_t &cursor) const {
 			const T *commandPtr = reinterpret_cast<const T *>(commandBytes.data() + cursor);
 			cursor += sizeof(T);
 			return *commandPtr;
@@ -51,7 +51,7 @@ struct RHI {
 			commandBytes.clear();
 		}
 
-		inline void drawIndexedInstanced(uint32_t indexCountPerInstance, uint32_t instanceCount, uint32_t startIndexLocation, int32_t baseVertexLocation, uint32_t startInstanceLocation) {
+		void drawIndexedInstanced(uint32_t indexCountPerInstance, uint32_t instanceCount, uint32_t startIndexLocation, int32_t baseVertexLocation, uint32_t startInstanceLocation) {
 			CommandDrawIndexed cmd;
 			cmd.indexCountPerInstance = indexCountPerInstance;
 			cmd.instanceCount = instanceCount;
