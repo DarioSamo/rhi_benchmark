@@ -96,22 +96,33 @@ bool D3D12::initialize() {
 void D3D12::resetCommandList() {
 	d3dCommandAllocator->Reset();
 	d3dGraphicsCommandList->Reset(d3dCommandAllocator, nullptr);
-
-	///
 	d3dGraphicsCommandList->SetGraphicsRootSignature(d3dRootSignature);
-	///
 }
 
 void D3D12::closeCommandList() {
 	d3dGraphicsCommandList->Close();
 }
 
-void D3D12::executeCommandDrawIndexed(const CommandDrawIndexed &command) {
+void D3D12::executeCommandDrawInstanced(const CommandDrawInstanced &command) {
+	d3dGraphicsCommandList->DrawInstanced(command.vertexCountPerInstance, command.instanceCount, command.startVertexLocation, command.startInstanceLocation);
+}
+
+void D3D12::executeCommandDrawIndexedInstanced(const CommandDrawIndexedInstanced &command) {
 	d3dGraphicsCommandList->DrawIndexedInstanced(command.indexCountPerInstance, command.instanceCount, command.startIndexLocation, command.baseVertexLocation, command.startInstanceLocation);
 }
 
 void D3D12::executeCommandSetGraphicsRoot32BitConstant(const CommandSetGraphicsRoot32BitConstant &command) {
 	d3dGraphicsCommandList->SetGraphicsRoot32BitConstant(command.rootParameterIndex, command.srcData, command.destOffsetIn32BitValues);
+}
+
+void D3D12::executeCommandSetViewport(const CommandSetViewport &command) {
+	D3D12_VIEWPORT viewport = { command.topLeftX, command.topLeftY, command.width, command.height, command.minDepth,command.maxDepth };
+	d3dGraphicsCommandList->RSSetViewports(1, &viewport);
+}
+
+void D3D12::executeCommandSetScissorRect(const CommandSetScissorRect &command) {
+	D3D12_RECT scissorRect = { command.left, command.top, command.right, command.bottom };
+	d3dGraphicsCommandList->RSSetScissorRects(1, &scissorRect);
 }
 
 bool D3D12::executeCommandQueue(const CommandQueue &commandQueue) {
@@ -123,11 +134,20 @@ bool D3D12::executeCommandQueue(const CommandQueue &commandQueue) {
 		commandType = commandQueue.peek(readCursor);
 
 		switch (commandType) {
-		case CommandType::DrawIndexed:
-			executeCommandDrawIndexed(commandQueue.read<CommandDrawIndexed>(readCursor));
+		case CommandType::DrawInstanced:
+			executeCommandDrawInstanced(commandQueue.read<CommandDrawInstanced>(readCursor));
+			break;
+		case CommandType::DrawIndexedInstanced:
+			executeCommandDrawIndexedInstanced(commandQueue.read<CommandDrawIndexedInstanced>(readCursor));
 			break;
 		case CommandType::SetGraphicsRoot32BitConstant:
 			executeCommandSetGraphicsRoot32BitConstant(commandQueue.read<CommandSetGraphicsRoot32BitConstant>(readCursor));
+			break;
+		case CommandType::SetViewport:
+			executeCommandSetViewport(commandQueue.read<CommandSetViewport>(readCursor));
+			break;
+		case CommandType::SetScissorRect:
+			executeCommandSetScissorRect(commandQueue.read<CommandSetScissorRect>(readCursor));
 			break;
 		default:
 			break;
@@ -139,6 +159,10 @@ bool D3D12::executeCommandQueue(const CommandQueue &commandQueue) {
 	return true;
 }
 
+void D3D12::drawInstanced(uint32_t vertexCountPerInstance, uint32_t instanceCount, uint32_t startVertexLocation, uint32_t startInstanceLocation) {
+	d3dGraphicsCommandList->DrawInstanced(vertexCountPerInstance, instanceCount, startVertexLocation, startInstanceLocation);
+}
+
 void D3D12::drawIndexedInstanced(uint32_t indexCountPerInstance, uint32_t instanceCount, uint32_t startIndexLocation, int32_t baseVertexLocation, uint32_t startInstanceLocation) {
 	d3dGraphicsCommandList->DrawIndexedInstanced(indexCountPerInstance, instanceCount, startIndexLocation, baseVertexLocation, startInstanceLocation);
 }
@@ -147,10 +171,34 @@ void D3D12::setGraphicsRoot32BitConstant(uint32_t rootParameterIndex, uint32_t s
 	d3dGraphicsCommandList->SetGraphicsRoot32BitConstant(rootParameterIndex, srcData, destOffsetIn32BitValues);
 }
 
+void D3D12::setViewport(float topLeftX, float topLeftY, float width, float height, float minDepth, float maxDepth) {
+	D3D12_VIEWPORT viewport = { topLeftX, topLeftY, width, height, minDepth, maxDepth };
+	d3dGraphicsCommandList->RSSetViewports(1, &viewport);
+}
+
+void D3D12::setScissorRect(int left, int top, int right, int bottom) {
+	D3D12_RECT scissorRect = { left, top, right, bottom };
+	d3dGraphicsCommandList->RSSetScissorRects(1, &scissorRect);
+}
+
+void D3D12::drawInstancedVirtual(uint32_t vertexCountPerInstance, uint32_t instanceCount, uint32_t startVertexLocation, uint32_t startInstanceLocation) {
+	d3dGraphicsCommandList->DrawInstanced(vertexCountPerInstance, instanceCount, startVertexLocation, startInstanceLocation);
+}
+
 void D3D12::drawIndexedInstancedVirtual(uint32_t indexCountPerInstance, uint32_t instanceCount, uint32_t startIndexLocation, int32_t baseVertexLocation, uint32_t startInstanceLocation) {
 	d3dGraphicsCommandList->DrawIndexedInstanced(indexCountPerInstance, instanceCount, startIndexLocation, baseVertexLocation, startInstanceLocation);
 }
 
 void D3D12::setGraphicsRoot32BitConstantVirtual(uint32_t rootParameterIndex, uint32_t srcData, uint32_t destOffsetIn32BitValues) {
 	d3dGraphicsCommandList->SetGraphicsRoot32BitConstant(rootParameterIndex, srcData, destOffsetIn32BitValues);
+}
+
+void D3D12::setViewportVirtual(float topLeftX, float topLeftY, float width, float height, float minDepth, float maxDepth) {
+	D3D12_VIEWPORT viewport = { topLeftX, topLeftY, width, height, minDepth, maxDepth };
+	d3dGraphicsCommandList->RSSetViewports(1, &viewport);
+}
+
+void D3D12::setScissorRectVirtual(int left, int top, int right, int bottom) {
+	D3D12_RECT scissorRect = { left, top, right, bottom };
+	d3dGraphicsCommandList->RSSetScissorRects(1, &scissorRect);
 }

@@ -9,13 +9,24 @@
 struct RHI {
 	enum class CommandType : uint32_t {
 		Unknown = 0,
-		DrawIndexed,
+		DrawInstanced,
+		DrawIndexedInstanced,
 		SetGraphicsRoot32BitConstant,
+		SetViewport,
+		SetScissorRect,
 		End = 0xFFFFFFFF
 	};
 
-	struct CommandDrawIndexed {
-		CommandType commandType = CommandType::DrawIndexed;
+	struct CommandDrawInstanced {
+		CommandType commandType = CommandType::DrawInstanced;
+		uint32_t vertexCountPerInstance;
+		uint32_t instanceCount;
+		uint32_t startVertexLocation;
+		uint32_t startInstanceLocation;
+	};
+
+	struct CommandDrawIndexedInstanced {
+		CommandType commandType = CommandType::DrawIndexedInstanced;
 		uint32_t indexCountPerInstance;
 		uint32_t instanceCount;
 		uint32_t startIndexLocation;
@@ -28,6 +39,24 @@ struct RHI {
 		uint32_t rootParameterIndex;
 		uint32_t srcData;
 		uint32_t destOffsetIn32BitValues;
+	};
+
+	struct CommandSetViewport {
+		CommandType commandType = CommandType::SetViewport;
+		float topLeftX;
+		float topLeftY;
+		float width;
+		float height;
+		float minDepth;
+		float maxDepth;
+	};
+
+	struct CommandSetScissorRect {
+		CommandType commandType = CommandType::SetScissorRect;
+		int left;
+		int top;
+		int right;
+		int bottom;
 	};
 
 	struct CommandQueue {
@@ -60,8 +89,17 @@ struct RHI {
 			commandBytes.clear();
 		}
 
+		void drawInstanced(uint32_t vertexCountPerInstance, uint32_t instanceCount, uint32_t startVertexLocation, uint32_t startInstanceLocation) {
+			CommandDrawInstanced cmd;
+			cmd.vertexCountPerInstance = vertexCountPerInstance;
+			cmd.instanceCount = instanceCount;
+			cmd.startVertexLocation = startVertexLocation;
+			cmd.startInstanceLocation = startInstanceLocation;
+			queue(cmd);
+		}
+
 		void drawIndexedInstanced(uint32_t indexCountPerInstance, uint32_t instanceCount, uint32_t startIndexLocation, int32_t baseVertexLocation, uint32_t startInstanceLocation) {
-			CommandDrawIndexed cmd;
+			CommandDrawIndexedInstanced cmd;
 			cmd.indexCountPerInstance = indexCountPerInstance;
 			cmd.instanceCount = instanceCount;
 			cmd.startIndexLocation = startIndexLocation;
@@ -77,6 +115,26 @@ struct RHI {
 			cmd.destOffsetIn32BitValues = destOffsetIn32BitValues;
 			queue(cmd);
 		}
+
+		void setViewport(float topLeftX, float topLeftY, float width, float height, float minDepth, float maxDepth) {
+			CommandSetViewport cmd;
+			cmd.topLeftX = topLeftX;
+			cmd.topLeftY = topLeftY;
+			cmd.width = width;
+			cmd.height = height;
+			cmd.minDepth = minDepth;
+			cmd.maxDepth = maxDepth;
+			queue(cmd);
+		}
+
+		void setScissorRect(int left, int top, int right, int bottom) {
+			CommandSetScissorRect cmd;
+			cmd.left = left;
+			cmd.top = top;
+			cmd.right = right;
+			cmd.bottom = bottom;
+			queue(cmd);
+		}
 	};
 
 	// Abstract interface for the implementation.
@@ -84,6 +142,9 @@ struct RHI {
 	virtual bool executeCommandQueue(const CommandQueue &commandQueue) = 0;
 
 	// Comparison interface that relies on virtual callbacks per command.
+	virtual void drawInstancedVirtual(uint32_t vertexCountPerInstance, uint32_t instanceCount, uint32_t startVertexLocation, uint32_t startInstanceLocation) = 0;
 	virtual void drawIndexedInstancedVirtual(uint32_t indexCountPerInstance, uint32_t instanceCount, uint32_t startIndexLocation, int32_t baseVertexLocation, uint32_t startInstanceLocation) = 0;
 	virtual void setGraphicsRoot32BitConstantVirtual(uint32_t rootParameterIndex, uint32_t srcData, uint32_t destOffsetIn32BitValues) = 0;
+	virtual void setViewportVirtual(float topLeftX, float topLeftY, float width, float height, float minDepth, float maxDepth) = 0;
+	virtual void setScissorRectVirtual(int left, int top, int right, int bottom) = 0;
 };

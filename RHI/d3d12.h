@@ -23,11 +23,26 @@ struct D3D12 : public RHI {
 	bool initialize() override;
 	inline void resetCommandList();
 	inline void closeCommandList();
-	inline void executeCommandDrawIndexed(const CommandDrawIndexed &command);
+
+	// Command queue calls.
+	inline void executeCommandDrawInstanced(const CommandDrawInstanced &command);
+	inline void executeCommandDrawIndexedInstanced(const CommandDrawIndexedInstanced &command);
 	inline void executeCommandSetGraphicsRoot32BitConstant(const CommandSetGraphicsRoot32BitConstant &command);
+	inline void executeCommandSetViewport(const CommandSetViewport &command);
+	inline void executeCommandSetScissorRect(const CommandSetScissorRect &command);
 	bool executeCommandQueue(const CommandQueue &commandQueue) override;
+
+	// Direct calls.
+	void drawInstanced(uint32_t vertexCountPerInstance, uint32_t instanceCount, uint32_t startVertexLocation, uint32_t startInstanceLocation);
 	void drawIndexedInstanced(uint32_t indexCountPerInstance, uint32_t instanceCount, uint32_t startIndexLocation, int32_t baseVertexLocation, uint32_t startInstanceLocation);
 	void setGraphicsRoot32BitConstant(uint32_t rootParameterIndex, uint32_t srcData, uint32_t destOffsetIn32BitValues);
+	void setViewport(float topLeftX, float topLeftY, float width, float height, float minDepth, float maxDepth);
+	void setScissorRect(int left, int top, int right, int bottom);
+
+	// Virtual calls.
+	void drawInstancedVirtual(uint32_t vertexCountPerInstance, uint32_t instanceCount, uint32_t startVertexLocation, uint32_t startInstanceLocation) override;
 	void drawIndexedInstancedVirtual(uint32_t indexCountPerInstance, uint32_t instanceCount, uint32_t startIndexLocation, int32_t baseVertexLocation, uint32_t startInstanceLocation) override;
 	void setGraphicsRoot32BitConstantVirtual(uint32_t rootParameterIndex, uint32_t srcData, uint32_t destOffsetIn32BitValues) override;
+	void setViewportVirtual(float topLeftX, float topLeftY, float width, float height, float minDepth, float maxDepth) override;
+	void setScissorRectVirtual(int left, int top, int right, int bottom) override;
 };

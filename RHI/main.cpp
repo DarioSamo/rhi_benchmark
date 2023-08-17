@@ -11,7 +11,12 @@
 
 struct DrawParams {
 	uint32_t srcData;
-	uint32_t indexCount;
+	uint32_t count;
+	float viewportTopLeftX;
+	float viewportTopLeftY;
+	int scissorBottom;
+	int scissorRight;
+	bool indexed;
 };
 
 #ifdef UNRELATED_CODE_EACH_ITERATION
@@ -46,8 +51,12 @@ int main(int argc, char** argv) {
 	std::list<DrawParams> drawParamsList;
 	for (int i = 0; i < CommandCount; i++) {
 		DrawParams params;
-		params.indexCount = 3;
+		params.count = 3;
 		params.srcData = 1;
+		params.viewportTopLeftX = 0.5f;
+		params.viewportTopLeftY = 2.0f;
+		params.scissorBottom = 100;
+		params.scissorRight = 200;
 		drawParamsList.push_back(params);
 	}
 
@@ -56,11 +65,20 @@ int main(int argc, char** argv) {
 	int64_t elapsedDirectTotal = 0;
 	const int IterationCount = 25;
 	for (int iter = 0; iter < IterationCount; iter++) {
+		// Command queue.
 		timer.reset();
 		commandQueue.clear();
 		for (const DrawParams &params : drawParamsList) {
+			commandQueue.setViewport(params.viewportTopLeftX, params.viewportTopLeftY, 100.0f, 100.0f, 0.0f, 1.0f);
+			commandQueue.setScissorRect(0, 0, params.scissorRight, params.scissorBottom);
 			commandQueue.setGraphicsRoot32BitConstant(0, params.srcData, 0);
-			commandQueue.drawIndexedInstanced(params.indexCount, 1, 0, 0, 0);
+
+			if (params.indexed) {
+				commandQueue.drawIndexedInstanced(params.count, 1, 0, 0, 0);
+			}
+			else {
+				commandQueue.drawInstanced(params.count, 1, 0, 0);
+			}
 
 #		ifdef UNRELATED_CODE_EACH_ITERATION
 			do_stuff();
@@ -70,11 +88,20 @@ int main(int argc, char** argv) {
 		rhi->executeCommandQueue(commandQueue);
 		int64_t elapsedQueue = timer.elapsedMicroseconds();
 
+		// Virtual.
 		timer.reset();
 		d3d12->resetCommandList();
 		for (const DrawParams &params : drawParamsList) {
+			rhi->setViewportVirtual(params.viewportTopLeftX, params.viewportTopLeftY, 100.0f, 100.0f, 0.0f, 1.0f);
+			rhi->setScissorRectVirtual(0, 0, params.scissorRight, params.scissorBottom);
 			rhi->setGraphicsRoot32BitConstantVirtual(0, params.srcData, 0);
-			rhi->drawIndexedInstancedVirtual(params.indexCount, 1, 0, 0, 0);
+
+			if (params.indexed) {
+				rhi->drawIndexedInstancedVirtual(params.count, 1, 0, 0, 0);
+			}
+			else {
+				rhi->drawInstancedVirtual(params.count, 1, 0, 0);
+			}
 
 #		ifdef UNRELATED_CODE_EACH_ITERATION
 			do_stuff();
@@ -84,11 +111,20 @@ int main(int argc, char** argv) {
 		d3d12->closeCommandList();
 		int64_t elapsedVirtual = timer.elapsedMicroseconds();
 
+		// Direct.
 		timer.reset();
 		d3d12->resetCommandList();
 		for (const DrawParams &params : drawParamsList) {
+			d3d12->setViewport(params.viewportTopLeftX, params.viewportTopLeftY, 100.0f, 100.0f, 0.0f, 1.0f);
+			d3d12->setScissorRect(0, 0, params.scissorRight, params.scissorBottom);
 			d3d12->setGraphicsRoot32BitConstant(0, params.srcData, 0);
-			d3d12->drawIndexedInstanced(params.indexCount, 1, 0, 0, 0);
+
+			if (params.indexed) {
+				d3d12->drawIndexedInstanced(params.count, 1, 0, 0, 0);
+			}
+			else {
+				d3d12->drawInstanced(params.count, 1, 0, 0);
+			}
 
 #		ifdef UNRELATED_CODE_EACH_ITERATION
 			do_stuff();
