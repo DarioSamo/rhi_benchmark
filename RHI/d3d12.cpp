@@ -69,12 +69,37 @@ bool D3D12::initialize() {
 		return false;
 	}
 
+	D3D12_VERSIONED_ROOT_SIGNATURE_DESC rootSigDesc = { };
+	D3D12_ROOT_PARAMETER rootParameter = { };
+	rootParameter.ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
+	rootParameter.Constants.Num32BitValues = 1;
+	rootParameter.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+	rootSigDesc.Desc_1_0.pParameters = &rootParameter;
+	rootSigDesc.Desc_1_0.NumParameters = 1;
+	rootSigDesc.Version = D3D_ROOT_SIGNATURE_VERSION_1;
+
+	result = D3D12SerializeVersionedRootSignature(&rootSigDesc, &d3dRootSignatureBlob, nullptr);
+	if (FAILED(result)) {
+		fprintf(stderr, "D3D12SerializeVersionedRootSignature failed with result 0x%X.\n", result);
+		return false;
+	}
+
+	result = d3dDevice->CreateRootSignature(0, d3dRootSignatureBlob->GetBufferPointer(), d3dRootSignatureBlob->GetBufferSize(), IID_PPV_ARGS(&d3dRootSignature));
+	if (FAILED(result)) {
+		fprintf(stderr, "CreateRootSignature failed with result 0x%X.\n", result);
+		return false;
+	}
+
 	return true;
 }
 
 void D3D12::resetCommandList() {
 	d3dCommandAllocator->Reset();
 	d3dGraphicsCommandList->Reset(d3dCommandAllocator, nullptr);
+
+	///
+	d3dGraphicsCommandList->SetGraphicsRootSignature(d3dRootSignature);
+	///
 }
 
 void D3D12::closeCommandList() {
@@ -83,6 +108,10 @@ void D3D12::closeCommandList() {
 
 void D3D12::executeCommandDrawIndexed(const CommandDrawIndexed &command) {
 	d3dGraphicsCommandList->DrawIndexedInstanced(command.indexCountPerInstance, command.instanceCount, command.startIndexLocation, command.baseVertexLocation, command.startInstanceLocation);
+}
+
+void D3D12::executeCommandSetGraphicsRoot32BitConstant(const CommandSetGraphicsRoot32BitConstant &command) {
+	d3dGraphicsCommandList->SetGraphicsRoot32BitConstant(command.rootParameterIndex, command.srcData, command.destOffsetIn32BitValues);
 }
 
 bool D3D12::executeCommandQueue(const CommandQueue &commandQueue) {
@@ -97,6 +126,9 @@ bool D3D12::executeCommandQueue(const CommandQueue &commandQueue) {
 		case CommandType::DrawIndexed:
 			executeCommandDrawIndexed(commandQueue.read<CommandDrawIndexed>(readCursor));
 			break;
+		case CommandType::SetGraphicsRoot32BitConstant:
+			executeCommandSetGraphicsRoot32BitConstant(commandQueue.read<CommandSetGraphicsRoot32BitConstant>(readCursor));
+			break;
 		default:
 			break;
 		}
@@ -107,6 +139,18 @@ bool D3D12::executeCommandQueue(const CommandQueue &commandQueue) {
 	return true;
 }
 
+void D3D12::drawIndexedInstanced(uint32_t indexCountPerInstance, uint32_t instanceCount, uint32_t startIndexLocation, int32_t baseVertexLocation, uint32_t startInstanceLocation) {
+	d3dGraphicsCommandList->DrawIndexedInstanced(indexCountPerInstance, instanceCount, startIndexLocation, baseVertexLocation, startInstanceLocation);
+}
+
+void D3D12::setGraphicsRoot32BitConstant(uint32_t rootParameterIndex, uint32_t srcData, uint32_t destOffsetIn32BitValues) {
+	d3dGraphicsCommandList->SetGraphicsRoot32BitConstant(rootParameterIndex, srcData, destOffsetIn32BitValues);
+}
+
 void D3D12::drawIndexedInstancedVirtual(uint32_t indexCountPerInstance, uint32_t instanceCount, uint32_t startIndexLocation, int32_t baseVertexLocation, uint32_t startInstanceLocation) {
 	d3dGraphicsCommandList->DrawIndexedInstanced(indexCountPerInstance, instanceCount, startIndexLocation, baseVertexLocation, startInstanceLocation);
+}
+
+void D3D12::setGraphicsRoot32BitConstantVirtual(uint32_t rootParameterIndex, uint32_t srcData, uint32_t destOffsetIn32BitValues) {
+	d3dGraphicsCommandList->SetGraphicsRoot32BitConstant(rootParameterIndex, srcData, destOffsetIn32BitValues);
 }

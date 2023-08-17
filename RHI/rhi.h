@@ -10,6 +10,7 @@ struct RHI {
 	enum class CommandType : uint32_t {
 		Unknown = 0,
 		DrawIndexed,
+		SetGraphicsRoot32BitConstant,
 		End = 0xFFFFFFFF
 	};
 
@@ -20,6 +21,13 @@ struct RHI {
 		uint32_t startIndexLocation;
 		int32_t baseVertexLocation;
 		uint32_t startInstanceLocation;
+	};
+
+	struct CommandSetGraphicsRoot32BitConstant {
+		CommandType commandType = CommandType::SetGraphicsRoot32BitConstant;
+		uint32_t rootParameterIndex;
+		uint32_t srcData;
+		uint32_t destOffsetIn32BitValues;
 	};
 
 	struct CommandQueue {
@@ -61,6 +69,14 @@ struct RHI {
 			cmd.startInstanceLocation = startInstanceLocation;
 			queue(cmd);
 		}
+
+		void setGraphicsRoot32BitConstant(uint32_t rootParameterIndex, uint32_t srcData, uint32_t destOffsetIn32BitValues) {
+			CommandSetGraphicsRoot32BitConstant cmd;
+			cmd.rootParameterIndex = rootParameterIndex;
+			cmd.srcData = srcData;
+			cmd.destOffsetIn32BitValues = destOffsetIn32BitValues;
+			queue(cmd);
+		}
 	};
 
 	// Abstract interface for the implementation.
@@ -69,4 +85,5 @@ struct RHI {
 
 	// Comparison interface that relies on virtual callbacks per command.
 	virtual void drawIndexedInstancedVirtual(uint32_t indexCountPerInstance, uint32_t instanceCount, uint32_t startIndexLocation, int32_t baseVertexLocation, uint32_t startInstanceLocation) = 0;
+	virtual void setGraphicsRoot32BitConstantVirtual(uint32_t rootParameterIndex, uint32_t srcData, uint32_t destOffsetIn32BitValues) = 0;
 };
